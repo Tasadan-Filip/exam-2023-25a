@@ -27,31 +27,45 @@ const getRandomInt = (min, max) => {
   return Math.floor(Math.random() * (max - min)) + min;
 };
 
-const receipeNames = [
-  'Healthier chicken chow mein',
-  'One-pot healthy Mexican beef mince',
-  'Mongolian chicken',
-  'One-pan butter chicken with rice',
-  '17-minute chicken pot pie',
-  'Spanish baked chicken with chorizo rice'];
-const descriptionNames = ['very good', 'healthy', 'lite', 'tasty', 'good'];
-const ingredientsNames = ['chicken', 'rice', 'salamy', 'bacon', 'eggs'];
-const instructionsNames = [
-  '1. prepare, 2. eat',
-  '1. prepare, 2. bake, 3. enjoy',
-  '1. prepare, 2. order delivey'];
-const categories = ['desserts', 'main dishes', 'vegan', 'keto'];
-const dificulties = ['easy', 'medium', 'hard'];
-const recipes = [];
+// generate double random number in range [min, max)
+const getRandomDouble = (min, max) => {
+  return Math.random() * (max - min) + min;
+};
+
+const itemNames = [
+  'Jet Ski',
+  'Bubble Wrap',
+  'Onesies',
+  'Jacuzzi',
+  'Breathalyzer',
+  'Zamboni'];
+const descriptionNames = [
+  'very good',
+  'healthy',
+  'lite',
+  'tasty',
+  'good'];
+const imageNames = [
+  'image1',
+  'image2',
+  'image3',
+  'image4',
+  'image5'];
+const categories = [
+  'clothes',
+  'electronics',
+  'books',
+  'toys'];
+const items = [];
 for (let i = 0; i < 20; i++) {
-  recipes.push({
+  items.push({
     id: i + 1,
-    name: receipeNames[getRandomInt(0, receipeNames.length)],
+    name: itemNames[getRandomInt(0, itemNames.length)],
     description: descriptionNames[getRandomInt(0, descriptionNames.length)],
-    ingredients: ingredientsNames[getRandomInt(0, ingredientsNames.length)],
-    instructions: instructionsNames[getRandomInt(0, instructionsNames.length)],
+    image: imageNames[getRandomInt(0, imageNames.length)],
     category: categories[getRandomInt(0, categories.length)],
-    difficulty: dificulties[getRandomInt(0, dificulties.length)]
+    units: getRandomInt(1, 100),
+    price: getRandomDouble(1, 100)
   });
 }
 
@@ -61,42 +75,42 @@ router.get('/categories', ctx => {
   ctx.response.status = 200;
 });
 
-router.get('/recipes/:category', ctx => {
+router.get('/items/:category', ctx => {
   // console.log("ctx: " + JSON.stringify(ctx));
   const headers = ctx.params;
   const category = headers.category;
   // console.log("category: " + JSON.stringify(category));
-  ctx.response.body = recipes.filter(recipe => recipe.category == category);
+  ctx.response.body = items.filter(item => item.category == category);
   // console.log("body: " + JSON.stringify(ctx.response.body));
   ctx.response.status = 200;
 });
 
-router.get('/easiest', ctx => {
-  ctx.response.body = recipes;
+router.get('/discounted', ctx => {
+  ctx.response.body = items;
   ctx.response.status = 200;
 });
 
-router.post('/difficulty', ctx => {
+router.post('/price', ctx => {
   // console.log("ctx: " + JSON.stringify(ctx));
   const headers = ctx.request.body;
-  const dificulty = headers.dificulty;
   // console.log("body: " + JSON.stringify(headers));
   const id = headers.id;
-  if (typeof id !== 'undefined' && typeof dificulty !== 'undefined') {
-    const index = recipes.findIndex(recipe => recipe.id == id);
+  const newPrice = headers.price;
+  if (typeof id !== 'undefined' && typeof newPrice !== 'undefined') {
+    const index = items.findIndex(item => item.id == id);
     if (index === -1) {
-      console.log("Recipe not available!");
-      ctx.response.body = { text: 'Recipe not available!' };
+      console.log("Item not available!");
+      ctx.response.body = { text: 'Item not available!' };
       ctx.response.status = 404;
     } else {
-      let recipe = recipes[index];
-      recipe.difficulty = dificulty;
-      ctx.response.body = recipe;
+      let item = items[index];
+      item.price = newPrice;
+      ctx.response.body = item;
       ctx.response.status = 200;
     }
   } else {
-    console.log("Missing or invalid: id or dificulty!");
-    ctx.response.body = { text: 'Missing or invalid: id or dificulty!' };
+    console.log("Missing or invalid: id or price!");
+    ctx.response.body = { text: 'Missing or invalid: id or price!' };
     ctx.response.status = 404;
   }
 });
@@ -108,68 +122,68 @@ const broadcast = (data) =>
     }
   });
 
-router.post('/recipe', ctx => {
+router.post('/item', ctx => {
   // console.log("ctx: " + JSON.stringify(ctx));
   const headers = ctx.request.body;
   // console.log("body: " + JSON.stringify(headers));
   const name = headers.name;
   const description = headers.description;
-  const ingredients = headers.ingredients;
-  const instructions = headers.instructions;
+  const image = headers.image;
   const category = headers.category;
-  const difficulty = headers.difficulty;
+  const units = headers.units;
+  const price = headers.price;
   if (typeof name !== 'undefined'
     && typeof description !== 'undefined'
-    && typeof ingredients !== 'undefined'
-    && typeof instructions !== 'undefined'
+    && typeof image !== 'undefined'
+    && typeof units !== 'undefined'
     && typeof category !== 'undefined'
-    && typeof difficulty !== 'undefined') {
-    const index = recipes.findIndex(recipe => recipe.name == name);
+    && typeof price !== 'undefined') {
+    const index = items.findIndex(item => item.name == name);
     if (index !== -1) {
-      console.log("Recipe already exists!");
-      ctx.response.body = { text: 'Recipe already exists!' };
+      console.log("Item already exists!");
+      ctx.response.body = { text: 'Item already exists!' };
       ctx.response.status = 404;
     } else {
-      let maxId = Math.max.apply(Math, recipes.map(function (recipe) {
-        return recipe.id;
+      let maxId = Math.max.apply(Math, items.map(function (item) {
+        return item.id;
       })) + 1;
-      let recipe = {
+      let item = {
         id: maxId,
         name,
         description,
-        ingredients,
-        instructions,
+        image,
+        units,
         category,
-        difficulty
+        price
       };
-      recipes.push(recipe);
-      broadcast(recipe);
-      ctx.response.body = recipe;
+      items.push(item);
+      broadcast(item);
+      ctx.response.body = item;
       ctx.response.status = 200;
     }
   } else {
-    const message = "Missing or invalid: name, description, ingredients, instructions, category or difficulty!";
+    const message = "Missing or invalid: name, description, image, category, units or price!";
     console.log(message);
     ctx.response.body = { text: message };
     ctx.response.status = 404;
   }
 });
 
-router.del('/recipe/:id', ctx => {
+router.del('/item/:id', ctx => {
   // console.log("ctx: " + JSON.stringify(ctx));
   const headers = ctx.params;
   // console.log("body: " + JSON.stringify(headers));
   const id = headers.id;
   if (typeof id !== 'undefined') {
-    const index = recipes.findIndex(recipe => recipe.id == id);
+    const index = items.findIndex(item => item.id == id);
     if (index === -1) {
-      console.log("No recipe with id: " + id);
-      ctx.response.body = { text: 'Invalid recipe id' };
+      console.log("No item with id: " + id);
+      ctx.response.body = { text: 'Invalid item id' };
       ctx.response.status = 404;
     } else {
-      let recipe = recipes[index];
-      recipes.splice(index, 1);
-      ctx.response.body = recipe;
+      let item = items[index];
+      items.splice(index, 1);
+      ctx.response.body = item;
       ctx.response.status = 200;
     }
   } else {
